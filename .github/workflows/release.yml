@@ -31,7 +31,7 @@ jobs:
       - run: pnpm -s marketplace:snippet > marketplace-index-snippet.json
       - id: marketplace-meta
         run: |
-          node --input-type=module -e "import fs from 'fs'; const pkg = JSON.parse(fs.readFileSync('package.json','utf8')); const meta = JSON.parse(fs.readFileSync('napgram-plugin.json','utf8')); const id = (meta.id || pkg.name); console.log(`id=${id}`); console.log(`version=${pkg.version}`);" >> $GITHUB_OUTPUT
+          node --input-type=module -e "import fs from 'fs'; const pkg = JSON.parse(fs.readFileSync('package.json','utf8')); const meta = JSON.parse(fs.readFileSync('napgram-plugin.json','utf8')); const id = (meta.id || pkg.name); console.log('id=' + id); console.log('version=' + pkg.version);" >> $GITHUB_OUTPUT
       - if: ${{ env.MARKETPLACE_PR_TOKEN != '' }}
         name: Ensure marketplace fork
         uses: actions/github-script@v7
@@ -59,7 +59,7 @@ jobs:
       - if: ${{ env.MARKETPLACE_PR_TOKEN != '' }}
         uses: actions/checkout@v4
         with:
-          repository: ${{ github.actor }}/marketplace
+          repository: NapGram/marketplace
           token: ${{ env.MARKETPLACE_PR_TOKEN }}
           path: marketplace
       - if: ${{ env.MARKETPLACE_PR_TOKEN != '' }}
