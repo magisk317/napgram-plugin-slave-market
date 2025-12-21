@@ -1,0 +1,15 @@
+{
+    "schemaVersion": 1,
+    "kind": "native",
+    "id": "slave-market",
+    "name": "大牛马时代",
+    "description": "大牛马时代 - NapGram 群聊经济养成游戏插件",
+    "entry": "dist/index.mjs",
+    "permissions": {
+        "instances": [
+            0
+        ],
+        "network": [],
+        "fs": []
+    }
+}

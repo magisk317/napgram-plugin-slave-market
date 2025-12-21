@@ -1,0 +1,35 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: "postgresql://postgres:password@localhost:5432/napgram?schema=public"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm i
+      - run: pnpm prisma generate
+      - run: pnpm pack:zip
+      - run: pnpm pack:tgz
+      - run: pnpm -s marketplace:snippet > marketplace-index-snippet.json
+      - run: pnpm publish --access public --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release/*
+            marketplace-index-snippet.json

@@ -1,0 +1,191 @@
+// This is your Prisma schema file
+// Learn more: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// 玩家信息表
+model SlaveMarketPlayer {
+  id              Int      @id @default(autoincrement())
+  userId          String   @unique                          // 用户ID (含群组前缀)
+  plainUserId     String?                                   // 平台原始ID
+  nickname        String                                    // 昵称
+  balance         Int      @default(0)                      // 余额
+  deposit         Int      @default(0)                      // 存款
+  worth           Int      @default(100)                    // 身价
+  creditLevel     Int      @default(1)                      // 信用等级
+  depositLimit    Int      @default(1000)                   // 存款上限
+  loanBalance     Int      @default(0)                      // 贷款余额
+  loanCreditLevel Int      @default(1)                      // 贷款信用等级
+  ownerId         String?                                   // 主人ID
+  ownedTime       BigInt?                                   // 被购买时间
+  vipEndTime      BigInt?                                   // VIP 到期时间
+  registerTime    BigInt                                    // 注册时间
+  registerSource  String?                                   // 注册来源群
+  
+  // 冷却时间
+  lastWorkTime     BigInt?                                  // 上次打工时间
+  lastRobTime      BigInt?                                  // 上次抢劫时间
+  lastTransferTime BigInt?                                  // 上次转账时间
+  lastBuyTime      BigInt?                                  // 上次购买时间
+  lastPlantTime    BigInt?                                  // 上次种地时间
+  lastHarvestTime  BigInt?                                  // 上次收获时间
+  
+  // 利息相关
+  lastInterestTime BigInt?                                  // 上次领取利息时间
+  lastLoanInterestTime BigInt?                              // 上次贷款利息计算时间
+  
+  // 权限与状态
+  isAdmin         Boolean  @default(false)                  // 是否管理员
+  commandBanned   Boolean  @default(false)                  // 是否禁用命令
+  
+  // 保镖相关
+  bodyguardName   String?                                   // 当前保镖名称
+  bodyguardEndTime BigInt?                                  // 保镖到期时间
+  
+  // 监狱相关
+  jailEndTime     BigInt?                                   // 出狱时间
+  jailWorkIncome  Int      @default(0)                      // 监狱收益
+  
+  // 关系
+  slaves          SlaveMarketPlayer[]  @relation("OwnerSlaves")
+  owner           SlaveMarketPlayer?   @relation("OwnerSlaves", fields: [ownerId], references: [userId], onDelete: SetNull)
+  transactions    SlaveMarketTransaction[]
+  farmLands       SlaveMarketFarmLand[]
+  appearances     SlaveMarketAppearance[]
+  
+  @@index([userId])
+  @@index([ownerId])
+  @@index([registerSource])
+  @@map("slave_market_players")
+}
+
+/// 交易记录表
+model SlaveMarketTransaction {
+  id          Int      @id @default(autoincrement())
+  userId      String                                        // 用户ID
+  type        String                                        // 交易类型
+  amount      Int                                           // 金额
+  balance     Int                                           // 操作后余额
+  targetId    String?                                       // 目标用户ID（转账/购买等）
+  description String?                                       // 描述
+  metadata    Json?                                         // 额外元数据
+  createdAt   DateTime @default(now())
+  
+  player      SlaveMarketPlayer @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  
+  @@index([userId, createdAt])
+  @@index([type])
+  @@map("slave_market_transactions")
+}
+
+/// 地块表
+model SlaveMarketFarmLand {
+  id          Int      @id @default(autoincrement())
+  userId      String                                        // 玩家ID
+  plotIndex   Int                                           // 地块编号 (1-10)
+  cropType    String?                                       // 作物类型
+  plantTime   BigInt?                                       // 种植时间
+  harvestTime BigInt?                                       // 成熟时间
+  
+  player      SlaveMarketPlayer @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  
+  @@unique([userId, plotIndex])
+  @@index([userId])
+  @@map("slave_market_farm_lands")
+}
+
+/// 装扮表
+model SlaveMarketAppearance {
+  id          Int      @id @default(autoincrement())
+  userId      String                                        // 玩家ID
+  itemName    String                                        // 装扮名称
+  slot        String                                        // 部位（头部/身体/脚部等）
+  equipped    Boolean  @default(false)                      // 是否装备中
+  acquiredAt  DateTime @default(now())
+  
+  player      SlaveMarketPlayer @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  
+  @@unique([userId, itemName])
+  @@index([userId, equipped])
+  @@map("slave_market_appearances")
+}
+
+/// 红包表
+model SlaveMarketRedPacket {
+  id          Int      @id @default(autoincrement())
+  packetId    String   @unique                              // 红包ID
+  senderId    String                                        // 发送者ID
+  senderName  String                                        // 发送者昵称
+  totalAmount Int                                           // 总金额
+  totalCount  Int                                           // 总份数
+  remaining   Int                                           // 剩余份数
+  scopeKey    String                                        // 作用域（群组）
+  createdAt   DateTime @default(now())
+  expiresAt   DateTime                                      // 过期时间
+  
+  grabs       SlaveMarketRedPacketGrab[]
+  
+  @@index([scopeKey])
+  @@index([createdAt])
+  @@map("slave_market_red_packets")
+}
+
+/// 红包领取记录
+model SlaveMarketRedPacketGrab {
+  id          Int      @id @default(autoincrement())
+  packetId    String                                        // 红包ID
+  userId      String                                        // 领取者ID
+  userName    String                                        // 领取者昵称
+  amount      Int                                           // 领取金额
+  grabbedAt   DateTime @default(now())
+  
+  packet      SlaveMarketRedPacket @relation(fields: [packetId], references: [packetId], onDelete: Cascade)
+  
+  @@unique([packetId, userId])
+  @@index([userId])
+  @@map("slave_market_red_packet_grabs")
+}
+
+/// VIP卡密表
+model SlaveMarketVipCard {
+  id          Int      @id @default(autoincrement())
+  cardCode    String   @unique                              // 卡密
+  cardType    String                                        // 类型（日卡/周卡/月卡/小时卡）
+  duration    Int                                           // 时长（毫秒）
+  used        Boolean  @default(false)                      // 是否已使用
+  usedBy      String?                                       // 使用者ID
+  usedAt      DateTime?                                     // 使用时间
+  createdBy   String                                        // 创建者ID
+  createdAt   DateTime @default(now())
+  
+  @@index([used])
+  @@index([cardCode])
+  @@map("slave_market_vip_cards")
+}
+
+/// 系统配置表
+model SlaveMarketSystem {
+  id                  Int      @id @default(autoincrement())
+  isDisabled          Boolean  @default(false)              // 系统是否禁用
+  lastAssetDecayTime  BigInt?                               // 上次资产衰减时间
+  metadata            Json?                                 // 其他配置
+  
+  @@map("slave_market_system")
+}
+
+/// 管理员表
+model SlaveMarketAdmin {
+  id          Int      @id @default(autoincrement())
+  userId      String   @unique                              // 管理员ID
+  nickname    String                                        // 昵称
+  addedBy     String                                        // 添加者ID
+  addedAt     DateTime @default(now())
+  
+  @@map("slave_market_admins")
+}
