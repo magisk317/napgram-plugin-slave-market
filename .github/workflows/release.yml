@@ -15,6 +15,7 @@ jobs:
       DATABASE_URL: "postgresql://postgres:password@localhost:5432/napgram?schema=public"
       NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       MARKETPLACE_PR_TOKEN: ${{ secrets.MARKETPLACE_PR_TOKEN }}
+      PUBLISH_COOLDOWN_MINUTES: "10"
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -27,6 +28,9 @@ jobs:
       - run: pnpm i
       - run: pnpm prisma generate
       - run: pnpm validate
+      - name: Check publish window
+        run: |
+          node --input-type=module -e "import fs from 'fs'; const pkg = JSON.parse(fs.readFileSync('package.json','utf8')); const name = pkg.name; const version = pkg.version; const cooldown = Number(process.env.PUBLISH_COOLDOWN_MINUTES || '10'); if (!Number.isFinite(cooldown) || cooldown <= 0) { console.log('Publish cooldown disabled'); process.exit(0); } const res = await fetch(`https://registry.npmjs.org/${encodeURIComponent(name)}`); if (res.status === 404) { console.log('Package not found on registry; skip cooldown check'); process.exit(0); } if (!res.ok) { throw new Error(`Registry request failed: ${res.status}`); } const data = await res.json(); if (data?.versions?.[version]) { console.error(`Version ${version} already published for ${name}`); process.exit(1); } const time = data?.time || {}; const ignore = new Set(['created','modified']); const dates = Object.entries(time).filter(([key]) => !ignore.has(key)).map(([, value]) => new Date(value)).filter((date) => !Number.isNaN(date.valueOf())); if (!dates.length) { console.log('No publish timestamps found'); process.exit(0); } const last = new Date(Math.max(...dates.map((date) => date.valueOf()))); const ageMinutes = (Date.now() - last.getTime()) / 60000; if (ageMinutes < cooldown) { console.error(`Last publish was ${ageMinutes.toFixed(1)} minutes ago; cooldown is ${cooldown} minutes`); process.exit(1); } console.log('Publish window ok');"
       - run: pnpm pack:zip
       - run: pnpm pack:tgz
       - run: pnpm -s marketplace:snippet > marketplace-index-snippet.json
