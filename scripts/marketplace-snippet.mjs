@@ -31,6 +31,20 @@ async function readSha(file) {
   return raw.split(/\s+/)[0].trim();
 }
 
+const repo = process.env.GITHUB_REPOSITORY;
+const tag = process.env.GITHUB_REF_NAME;
+const distHost = process.env.MARKETPLACE_DIST_HOST;
+
+function buildUrl(file) {
+  if (distHost) {
+    return `${distHost.replace(/\/$/, '')}/${file}`;
+  }
+  if (repo && tag) {
+    return `https://github.com/${repo}/releases/download/${tag}/${file}`;
+  }
+  return `https://YOUR_HOST/${file}`;
+}
+
 const out = {
   schemaVersion: 1,
   kind: "native",
@@ -42,8 +56,8 @@ const out = {
         {
           version,
           entry: { type: 'file', path: String(meta.entry || 'dist/index.mjs') },
-          dist: zip ? { type: 'zip', url: `https://YOUR_HOST/${zip}`, sha256: await readSha(zip) }
-            : tgz ? { type: 'tgz', url: `https://YOUR_HOST/${tgz}`, sha256: await readSha(tgz) }
+          dist: zip ? { type: 'zip', url: buildUrl(zip), sha256: await readSha(zip) }
+            : tgz ? { type: 'tgz', url: buildUrl(tgz), sha256: await readSha(tgz) }
               : { type: 'zip', url: 'https://YOUR_HOST/FILE.zip', sha256: '...sha256...' },
           permissions: meta.permissions || { network: [], fs: [], instances: [0] }
         }

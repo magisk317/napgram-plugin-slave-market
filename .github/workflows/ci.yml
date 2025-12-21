@@ -17,6 +17,9 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
+          registry-url: https://registry.npmjs.org/
+          always-auth: true
       - run: pnpm i
-      - run: pnpm prisma generate
+      - if: ${{ hashFiles('prisma/schema.prisma') != '' }}
+        run: pnpm prisma generate
       - run: pnpm type-check

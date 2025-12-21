@@ -28,6 +28,52 @@ jobs:
       - run: pnpm pack:zip
       - run: pnpm pack:tgz
       - run: pnpm -s marketplace:snippet > marketplace-index-snippet.json
+      - id: marketplace-meta
+        run: |
+          node --input-type=module -e "import fs from 'fs'; const pkg = JSON.parse(fs.readFileSync('package.json','utf8')); const meta = JSON.parse(fs.readFileSync('napgram-plugin.json','utf8')); const id = (meta.id || pkg.name); console.log(`id=${id}`); console.log(`version=${pkg.version}`);" >> $GITHUB_OUTPUT
+      - if: ${{ secrets.MARKETPLACE_PR_TOKEN != '' }}
+        name: Ensure marketplace fork
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.MARKETPLACE_PR_TOKEN }}
+          script: |
+            const upstream = { owner: 'NapGram', repo: 'marketplace' };
+            const forkOwner = context.actor;
+            try {
+              await github.rest.repos.get({ owner: forkOwner, repo: upstream.repo });
+              return;
+            } catch (error) {
+              if (error.status !== 404) throw error;
+            }
+            await github.rest.repos.createFork({ owner: upstream.owner, repo: upstream.repo });
+            for (let i = 0; i < 10; i++) {
+              try {
+                await github.rest.repos.get({ owner: forkOwner, repo: upstream.repo });
+                return;
+              } catch {
+                await new Promise(resolve => setTimeout(resolve, 3000));
+              }
+            }
+            core.setFailed('marketplace fork not ready');
+      - if: ${{ secrets.MARKETPLACE_PR_TOKEN != '' }}
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.actor }}/marketplace
+          token: ${{ secrets.MARKETPLACE_PR_TOKEN }}
+          path: marketplace
+      - if: ${{ secrets.MARKETPLACE_PR_TOKEN != '' }}
+        run: node scripts/marketplace-upsert.mjs --index marketplace/index.json --snippet marketplace-index-snippet.json
+      - if: ${{ secrets.MARKETPLACE_PR_TOKEN != '' }}
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.MARKETPLACE_PR_TOKEN }}
+          path: marketplace
+          commit-message: "marketplace: update ${{ steps.marketplace-meta.outputs.id }} ${{ steps.marketplace-meta.outputs.version }}"
+          branch: "marketplace/${{ steps.marketplace-meta.outputs.id }}-${{ steps.marketplace-meta.outputs.version }}"
+          title: "marketplace: update ${{ steps.marketplace-meta.outputs.id }} ${{ steps.marketplace-meta.outputs.version }}"
+          body: "Auto-generated marketplace submission."
+          base: main
+          push-to-fork: ${{ github.actor }}/marketplace
       - run: pnpm publish --access public --no-git-checks
       - uses: softprops/action-gh-release@v2
         with:
