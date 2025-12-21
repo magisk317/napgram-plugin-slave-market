@@ -32,6 +32,8 @@ if (!existing) {
   indexData.plugins.push(plugin);
 } else {
   if (plugin.name) existing.name = plugin.name;
+  if (plugin.description) existing.description = plugin.description;
+  if (plugin.readme) existing.readme = plugin.readme;
   if (!Array.isArray(existing.versions)) existing.versions = [];
   if (version) {
     const idx = existing.versions.findIndex(item => item.version === version.version);

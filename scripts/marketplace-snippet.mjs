@@ -45,6 +45,33 @@ function buildUrl(file) {
   return `https://YOUR_HOST/${file}`;
 }
 
+function normalizeRepoUrl(input) {
+  const raw = String(input || '').trim();
+  if (!raw) return '';
+  return raw.replace(/^git\+/, '').replace(/\.git$/, '');
+}
+
+function resolveRepoSlug() {
+  if (repo) return repo;
+  const pkgRepo = typeof pkg.repository === 'string' ? pkg.repository : pkg.repository?.url;
+  const normalized = normalizeRepoUrl(pkgRepo);
+  if (!normalized) return '';
+  const match = normalized.match(/github\.com[:/](.+?)(\/)?$/i);
+  if (match) return match[1].replace(/\.git$/, '');
+  if (/^[^/]+\/[^/]+$/.test(normalized)) return normalized;
+  return '';
+}
+
+function buildReadmeUrl() {
+  const slug = resolveRepoSlug();
+  if (!slug) return '';
+  const ref = tag || 'main';
+  return `https://raw.githubusercontent.com/${slug}/${ref}/README.md`;
+}
+
+const description = String(meta.description || pkg.description || '').trim();
+const readme = buildReadmeUrl();
+
 const out = {
   schemaVersion: 1,
   kind: "native",
@@ -52,6 +79,8 @@ const out = {
     {
       id,
       name: meta.name || 'NapGram Plugin',
+      description: description || undefined,
+      readme: readme || undefined,
       versions: [
         {
           version,
