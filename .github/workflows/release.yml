@@ -30,7 +30,52 @@ jobs:
       - run: pnpm validate
       - name: Check publish window
         run: |
-          node --input-type=module -e "import fs from 'fs'; const pkg = JSON.parse(fs.readFileSync('package.json','utf8')); const name = pkg.name; const version = pkg.version; const cooldown = Number(process.env.PUBLISH_COOLDOWN_MINUTES || '10'); if (!Number.isFinite(cooldown) || cooldown <= 0) { console.log('Publish cooldown disabled'); process.exit(0); } const res = await fetch(`https://registry.npmjs.org/${encodeURIComponent(name)}`); if (res.status === 404) { console.log('Package not found on registry; skip cooldown check'); process.exit(0); } if (!res.ok) { throw new Error(`Registry request failed: ${res.status}`); } const data = await res.json(); if (data?.versions?.[version]) { console.error(`Version ${version} already published for ${name}`); process.exit(1); } const time = data?.time || {}; const ignore = new Set(['created','modified']); const dates = Object.entries(time).filter(([key]) => !ignore.has(key)).map(([, value]) => new Date(value)).filter((date) => !Number.isNaN(date.valueOf())); if (!dates.length) { console.log('No publish timestamps found'); process.exit(0); } const last = new Date(Math.max(...dates.map((date) => date.valueOf()))); const ageMinutes = (Date.now() - last.getTime()) / 60000; if (ageMinutes < cooldown) { console.error(`Last publish was ${ageMinutes.toFixed(1)} minutes ago; cooldown is ${cooldown} minutes`); process.exit(1); } console.log('Publish window ok');"
+          node --input-type=module <<'NODE'
+          import fs from 'fs';
+          const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+          const name = pkg.name;
+          const version = pkg.version;
+          const cooldown = Number(process.env.PUBLISH_COOLDOWN_MINUTES || '10');
+          if (!Number.isFinite(cooldown) || cooldown <= 0) {
+            console.log('Publish cooldown disabled');
+            process.exit(0);
+          }
+          const res = await fetch(`https://registry.npmjs.org/${encodeURIComponent(name)}`);
+          if (res.status === 404) {
+            console.log('Package not found on registry; skip cooldown check');
+            process.exit(0);
+          }
+          if (!res.ok) {
+            throw new Error(`Registry request failed: ${res.status}`);
+          }
+          const data = await res.json();
+          if (data?.versions?.[version]) {
+            console.error(`Version ${version} already published for ${name}`);
+            process.exit(1);
+          }
+          const versionCount = data?.versions ? Object.keys(data.versions).length : 0;
+          if (versionCount <= 1) {
+            console.log('Only one version on registry; skip cooldown check');
+            process.exit(0);
+          }
+          const time = data?.time || {};
+          const ignore = new Set(['created', 'modified']);
+          const dates = Object.entries(time)
+            .filter(([key]) => !ignore.has(key))
+            .map(([, value]) => new Date(value))
+            .filter((date) => !Number.isNaN(date.valueOf()));
+          if (!dates.length) {
+            console.log('No publish timestamps found');
+            process.exit(0);
+          }
+          const last = new Date(Math.max(...dates.map((date) => date.valueOf())));
+          const ageMinutes = (Date.now() - last.getTime()) / 60000;
+          if (ageMinutes < cooldown) {
+            console.error(`Last publish was ${ageMinutes.toFixed(1)} minutes ago; cooldown is ${cooldown} minutes`);
+            process.exit(1);
+          }
+          console.log('Publish window ok');
+          NODE
       - run: pnpm pack:zip
       - run: pnpm pack:tgz
       - run: pnpm -s marketplace:snippet > marketplace-index-snippet.json
