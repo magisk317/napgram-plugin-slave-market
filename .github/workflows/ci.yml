@@ -22,4 +22,5 @@ jobs:
       - run: pnpm i
       - if: ${{ hashFiles('prisma/schema.prisma') != '' }}
         run: pnpm prisma generate
+      - run: pnpm validate
       - run: pnpm type-check

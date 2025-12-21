@@ -26,6 +26,7 @@ jobs:
           always-auth: true
       - run: pnpm i
       - run: pnpm prisma generate
+      - run: pnpm validate
       - run: pnpm pack:zip
       - run: pnpm pack:tgz
       - run: pnpm -s marketplace:snippet > marketplace-index-snippet.json

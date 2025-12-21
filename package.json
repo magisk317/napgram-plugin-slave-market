@@ -10,6 +10,7 @@
         "clean": "rm -rf dist release .cache",
         "build": "pnpm clean && tsc -p tsconfig.build.json",
         "type-check": "tsc -p tsconfig.json --noEmit",
+        "validate": "node scripts/validate-plugin.mjs",
         "pack:zip": "pnpm build && node scripts/pack.mjs zip",
         "pack:tgz": "pnpm build && node scripts/pack.mjs tgz",
         "marketplace:snippet": "node scripts/marketplace-snippet.mjs",
