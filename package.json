@@ -1,6 +1,6 @@
 {
     "name": "napgram-plugin-slave-market",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "大牛马时代 - NapGram 群聊经济养成游戏插件",
     "type": "module",
     "packageManager": "pnpm@10.26.0",
