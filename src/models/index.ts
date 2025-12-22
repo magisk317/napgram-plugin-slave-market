@@ -3,14 +3,20 @@
  */
 
 import type { PluginContext } from '@napgram/sdk';
-import { PrismaClient } from '@prisma/client';
+import type { PrismaClient as PrismaClientType } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
+import { createRequire } from 'node:module';
 
-let prisma: PrismaClient | null = null;
+const require = createRequire(import.meta.url);
+const { PrismaClient } = require('../prisma-client') as {
+    PrismaClient: new (...args: any[]) => PrismaClientType;
+};
+
+let prisma: PrismaClientType | null = null;
 let pool: Pool | null = null;
 
-export function initializeDatabase(ctx: PluginContext): PrismaClient {
+export function initializeDatabase(ctx: PluginContext): PrismaClientType {
     if (!prisma) {
         const connectionString = process.env.DATABASE_URL;
         if (!connectionString) {
@@ -31,7 +37,7 @@ export function initializeDatabase(ctx: PluginContext): PrismaClient {
     return prisma;
 }
 
-export function getDatabase(): PrismaClient {
+export function getDatabase(): PrismaClientType {
     if (!prisma) {
         throw new Error('Database not initialized. Call initializeDatabase first.');
     }

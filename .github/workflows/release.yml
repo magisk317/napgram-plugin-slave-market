@@ -26,7 +26,7 @@ jobs:
           registry-url: https://registry.npmjs.org/
           always-auth: true
       - run: pnpm i
-      - run: pnpm prisma generate
+      - run: pnpm build
       - run: pnpm validate
       - name: Check publish window
         run: |

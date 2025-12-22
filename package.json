@@ -1,6 +1,6 @@
 {
     "name": "napgram-plugin-slave-market",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "description": "大牛马时代 - NapGram 群聊经济养成游戏插件",
     "type": "module",
     "packageManager": "pnpm@10.26.0",
@@ -8,7 +8,8 @@
     "types": "dist/index.d.ts",
     "scripts": {
         "clean": "rm -rf dist release .cache",
-        "build": "pnpm clean && tsc -p tsconfig.build.json",
+        "prisma:generate": "prisma generate --schema prisma/schema.prisma",
+        "build": "pnpm clean && pnpm prisma:generate && tsc -p tsconfig.build.json",
         "type-check": "tsc -p tsconfig.json --noEmit",
         "validate": "node scripts/validate-plugin.mjs",
         "pack:zip": "pnpm build && node scripts/pack.mjs zip",
