@@ -12,6 +12,7 @@ generator client_dist {
 
 datasource db {
   provider = "postgresql"
+  schemas  = ["slave_market"]
 }
 
 /// 玩家信息表
@@ -67,6 +68,7 @@ model SlaveMarketPlayer {
   @@index([userId])
   @@index([ownerId])
   @@index([registerSource])
+  @@schema("slave_market")
   @@map("slave_market_players")
 }
 
@@ -86,6 +88,7 @@ model SlaveMarketTransaction {
   
   @@index([userId, createdAt])
   @@index([type])
+  @@schema("slave_market")
   @@map("slave_market_transactions")
 }
 
@@ -102,6 +105,7 @@ model SlaveMarketFarmLand {
   
   @@unique([userId, plotIndex])
   @@index([userId])
+  @@schema("slave_market")
   @@map("slave_market_farm_lands")
 }
 
@@ -118,6 +122,7 @@ model SlaveMarketAppearance {
   
   @@unique([userId, itemName])
   @@index([userId, equipped])
+  @@schema("slave_market")
   @@map("slave_market_appearances")
 }
 
@@ -138,6 +143,7 @@ model SlaveMarketRedPacket {
   
   @@index([scopeKey])
   @@index([createdAt])
+  @@schema("slave_market")
   @@map("slave_market_red_packets")
 }
 
@@ -154,6 +160,7 @@ model SlaveMarketRedPacketGrab {
   
   @@unique([packetId, userId])
   @@index([userId])
+  @@schema("slave_market")
   @@map("slave_market_red_packet_grabs")
 }
 
@@ -171,6 +178,7 @@ model SlaveMarketVipCard {
   
   @@index([used])
   @@index([cardCode])
+  @@schema("slave_market")
   @@map("slave_market_vip_cards")
 }
 
@@ -181,6 +189,7 @@ model SlaveMarketSystem {
   lastAssetDecayTime  BigInt?                               // 上次资产衰减时间
   metadata            Json?                                 // 其他配置
   
+  @@schema("slave_market")
   @@map("slave_market_system")
 }
 
@@ -192,5 +201,6 @@ model SlaveMarketAdmin {
   addedBy     String                                        // 添加者ID
   addedAt     DateTime @default(now())
   
+  @@schema("slave_market")
   @@map("slave_market_admins")
 }

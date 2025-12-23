@@ -59,18 +59,8 @@ plugins:
 
 ### 数据库配置
 
-确保 `DATABASE_URL` 环境变量已设置：
+默认沿用主服务的 `DATABASE_URL` ，插件会自动使用 `slave_market` schema。
 
-```bash
-export DATABASE_URL="postgresql://user:password@localhost:5432/napgram"
-```
-
-运行 Prisma 迁移：
-
-```bash
-cd packages/napgram-plugin-slave-market
-npx prisma migrate dev
-```
 
 ### 使用
 
@@ -236,11 +226,6 @@ npm run typecheck
 ## 许可证
 
 MIT License
-
-## 致谢
-
-本插件灵感来源于 [koishi-plugin-slave-market-rework](https://github.com/example/koishi-plugin-slave-market-rework)
-
 ---
 
 **版本**: 1.0.0  

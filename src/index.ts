@@ -9,6 +9,7 @@ import { registerCommands } from './commands';
 import { initializeDatabase, closeDatabase } from './models';
 import { SlaveMarketConfig, defaultConfig } from './config';
 import { PlayerService } from './services';
+import { markRecentRegistration } from './utils/registration-tracker';
 
 /**
  * 大牛马时代插件
@@ -49,7 +50,10 @@ const plugin = definePlugin({
                 const groupId = event.channelType === 'group' ? event.channelId : undefined;
 
                 // 静默自动注册（不影响消息流）
-                await playerService.getOrCreatePlayer(userId, nickname, groupId);
+                const { created } = await playerService.getOrCreatePlayerWithStatus(userId, nickname, groupId);
+                if (created) {
+                    markRecentRegistration(userId);
+                }
             } catch (error: any) {
                 // 自动注册失败不影响其他功能
                 ctx.logger.debug('[slave-market] Auto register failed:', error.message);

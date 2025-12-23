@@ -24,6 +24,8 @@ import { registerEconomyCommands } from './economy.commands';
 import { registerMarketAndFarmCommands } from './gameplay.commands';
 import { registerSocialCommands } from './social.commands';
 import { registerAdminCommands } from './admin.commands';
+import { consumeRecentRegistration } from '../utils/registration-tracker';
+import { formatRegisterSuccess } from '../utils/register';
 
 export function registerCommands(ctx: PluginContext, config: SlaveMarketConfig) {
     // 初始化服务
@@ -53,6 +55,28 @@ export function registerCommands(ctx: PluginContext, config: SlaveMarketConfig) 
         redPacketService,
         rankingService,
         adminService,
+    };
+
+    const originalCommand = ctx.command.bind(ctx);
+    (ctx as any).command = (commandConfig: any) => {
+        const wrappedHandler = async (event: any, args: string[]) => {
+            if (commandConfig.name !== '注册') {
+                const userId = event.sender.userId;
+                const nickname = event.sender.userName || event.sender.userId;
+                const groupId = event.channelType === 'group' ? event.channelId : undefined;
+                const { player, created } = await playerService.getOrCreatePlayerWithStatus(userId, nickname, groupId);
+                const shouldNotify = created || consumeRecentRegistration(userId);
+                if (shouldNotify) {
+                    await event.reply(formatRegisterSuccess(player, config));
+                }
+            }
+            await commandConfig.handler(event, args);
+        };
+
+        return originalCommand({
+            ...commandConfig,
+            handler: wrappedHandler,
+        });
     };
 
     // 注册各模块命令

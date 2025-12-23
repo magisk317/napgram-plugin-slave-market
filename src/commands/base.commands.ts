@@ -6,6 +6,8 @@ import { createCommand, makeText } from '@napgram/sdk';
 import type { PluginContext, MessageEvent, CommandHandler } from '@napgram/sdk';
 import type { SlaveMarketConfig } from '../config';
 import { BankService, PlayerService, TransactionService } from '../services';
+import { formatRegisterSuccess } from '../utils/register';
+import { consumeRecentRegistration } from '../utils/registration-tracker';
 
 export function registerBaseCommands(
     ctx: PluginContext,
@@ -29,6 +31,7 @@ export function registerBaseCommands(
                 const groupId = event.channelType === 'group' ? event.channelId : undefined;
 
                 const player = await playerService.getOrCreatePlayer(userId, nickname, groupId);
+                consumeRecentRegistration(userId);
 
                 if (player.commandBanned) {
                     await event.reply([makeText('❌ 你的命令权限已被禁用')]);
@@ -40,7 +43,7 @@ export function registerBaseCommands(
                     return;
                 }
 
-                await event.reply([makeText(`🎉 注册成功！\n\n📝 你的信息：\n💰 余额：${player.balance}\n💎 身价：${player.worth}\n🏦 存款上限：${player.depositLimit}\n\n输入\"帮助\"查看所有命令`)]);
+                await event.reply([makeText(formatRegisterSuccess(player, config))]);
             } catch (error: any) {
                 ctx.logger.error('[slave-market] Register error:', error);
                 await event.reply([makeText(`❌ 注册失败：${error.message}`)]);
@@ -138,7 +141,41 @@ export function registerBaseCommands(
                 return;
             }
 
-            await event.reply([makeText(`🎮 大牛马时代 - 命令列表\n\n📝 基础命令：\n  注册 - 注册成为玩家\n  我的信息 - 查看个人资料\n  帮助 - 查看此帮助\n\n💰 经济命令：\n  打工 - 工作赚钱\n  监狱打工/踩缝纫机 - 服刑期间赚钱\n  抢劫 [@用户] [策略] - 抢劫其他玩家\n  存款 <金额> - 存入银行\n  取款 <金额> - 从银行取出\n  领取利息 - 领取存款利息\n  银行信息 - 查看银行账户\n  转账 [@用户] <金额> - 转账\n\n🐂 牛马市场：\n  牛马市场 - 查看可购买玩家\n  我的牛马 - 查看拥有的牛马\n  购买玩家 [@用户] - 购买玩家\n  放生 [@用户] - 解除雇佣关系\n  赎身 - 支付赎金获得自由\n\n🌾 种地系统：\n  开地 - 购买新地块\n  种地 [作物] [地块] - 种植作物\n  收获 - 收获成熟作物\n  地块状态 - 查看农场状态\n\n输入具体命令查看详细说明`)]);
+            const helpMd = [
+                '**🎮 大牛马时代 - 命令列表**',
+                '',
+                '**📝 基础命令**',
+                '- 注册 - 注册成为玩家',
+                '- 我的信息 - 查看个人资料',
+                '- 帮助 - 查看此帮助',
+                '',
+                '**💰 经济命令**',
+                '- 打工 - 工作赚钱',
+                '- 监狱打工/踩缝纫机 - 服刑期间赚钱',
+                '- 抢劫 [@用户] [策略] - 抢劫其他玩家',
+                '- 存款 <金额> - 存入银行',
+                '- 取款 <金额> - 从银行取出',
+                '- 领取利息 - 领取存款利息',
+                '- 银行信息 - 查看银行账户',
+                '- 转账 [@用户] <金额> - 转账',
+                '',
+                '**🐂 牛马市场**',
+                '- 牛马市场 - 查看可购买玩家',
+                '- 我的牛马 - 查看拥有的牛马',
+                '- 购买玩家 [@用户] - 购买玩家',
+                '- 放生 [@用户] - 解除雇佣关系',
+                '- 赎身 - 支付赎金获得自由',
+                '',
+                '**🌾 种地系统**',
+                '- 开地 - 购买新地块',
+                '- 种地 [作物] [地块] - 种植作物',
+                '- 收获 - 收获成熟作物',
+                '- 地块状态 - 查看农场状态',
+                '',
+                '输入具体命令查看详细说明',
+            ].join('\n');
+
+            await event.reply(helpMd);
         }
     }));
 

@@ -20,6 +20,18 @@ export class PlayerService {
         nickname: string,
         groupId?: string
     ): Promise<SlaveMarketPlayer> {
+        const result = await this.getOrCreatePlayerWithStatus(userId, nickname, groupId);
+        return result.player;
+    }
+
+    /**
+     * 获取或创建玩家（带是否新建标记）
+     */
+    async getOrCreatePlayerWithStatus(
+        userId: string,
+        nickname: string,
+        groupId?: string
+    ): Promise<{ player: SlaveMarketPlayer; created: boolean }> {
         const db = getDatabase();
 
         let player = await db.slaveMarketPlayer.findUnique({
@@ -27,7 +39,6 @@ export class PlayerService {
         });
 
         if (!player) {
-            // 提取平台原始ID
             const plainUserId = userId.includes(':') ? userId.split(':')[1] : userId;
 
             player = await db.slaveMarketPlayer.create({
@@ -44,9 +55,10 @@ export class PlayerService {
             });
 
             this.ctx.logger.info(`[slave-market] New player registered: ${nickname} (${userId})`);
+            return { player, created: true };
         }
 
-        return player;
+        return { player, created: false };
     }
 
     /**
